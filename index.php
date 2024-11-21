@@ -13,7 +13,6 @@ $paginaAtual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
 $paginaAtual = max(1, $paginaAtual); // Garante que a página seja no mínimo 1
 // Calcula o offset para a query SQL
 $offset = ($paginaAtual - 1) * $limit;
-$agrupar = isset($_GET['agrupar']) ? 1 : 0;
 
 ?>
 <!DOCTYPE html>
@@ -24,7 +23,6 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Produto</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script type="text/javascript" src="js/jquery-3.7.0.min.js"></script>
 </head>
 
 <body>
@@ -163,23 +161,25 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
             $countParams[':produto'] = $produto;
         }
 
-        //FILTRO FUNCIONÁRIO / FORNECEDOR
+        //FILTRO FUNCIONÁRIO
         if (isset($dados['funcionario']) && !empty($dados['funcionario'])) {
             $funcionario = "%" . trim($dados['funcionario']) . "%"; // Busca por similaridade
-            if ($operacao == 0) {
-                $query .= " AND funcionario.funcionario_nome LIKE :funcionario";
-                $params[':funcionario'] = $funcionario;
-                $countQuery .= " AND funcionario.funcionario_nome LIKE :funcionario";
-                $countParams[':funcionario'] = $funcionario;
-            } elseif ($operacao == 1) {
-                $query .= " AND forn.fornecedor_razao LIKE :fornecedor OR forn.fornecedor_fantasia LIKE :fornecedor";
-                $params[':fornecedor'] = $fornecedor;
-                $countQuery .= " AND funcionario.funcionario_nome LIKE :funcionario";
-                $countParams[':funcionario'] = $funcionario;
-            }
+            $query .= " AND funcionario.funcionario_nome LIKE :funcionario";
+            $params[':funcionario'] = $funcionario;
+            $countQuery .= " AND funcionario.funcionario_nome LIKE :funcionario";
+            $countParams[':funcionario'] = $funcionario;
         }
 
-        // Filtro para data inicial
+        //FILTRO FORNECEDOR
+        if (isset($dados['fornecedor']) && !empty($dados['fornecedor'])) {
+            $fornecedor = "%" . trim($dados['fornecedor']) . "%"; // Busca por similaridade
+            $query .= " AND forn.fornecedor_razao LIKE :fornecedor OR forn.fornecedor_fantasia LIKE :fornecedor";
+            $params[':fornecedor'] = $fornecedor;
+            $countQuery .= " AND forn.fornecedor_razao LIKE :fornecedor";
+            $countParams[':fornecedor'] = $fornecedor;
+        }
+
+        // FILTRO DATA INICIAL
         if (isset($dados['data_inicio']) && !empty($dados['data_inicio'])) {
             $data_inicio = $dados['data_inicio'];
             $params[':data_inicio'] = $data_inicio;
@@ -194,7 +194,7 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
             }
         }
 
-        // Filtro para data final
+        // FILTRO DATA FINAL
         if (isset($dados['data_final']) && !empty($dados['data_final'])) {
             $data_final = $dados['data_final'];
             $params[':data_final'] = $data_final;
@@ -299,11 +299,14 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
             </div>
 
 
+            <?php $campo = isset($dados['funcionario']) ? 'funcionario' : (isset($dados['fornecedor']) ? 'fornecedor' : null);?>
+
             <div class="form-group col-md-4">
                 <div class="form-floating">
-                    <input class="form-control" id="funcionario" name="funcionario" value="<?php if (isset($dados['funcionario'])) echo htmlspecialchars($dados['funcionario']); ?>">
+                    <input class="form-control" id="pesquisaInput" name="funcionario" value="<?php if (isset($campo)) echo htmlspecialchars($dados[$campo]); ?>">
                     <label id="pesquisaLabel" for="atual">Pesquisar por funcionário:</label>
                 </div>
+                          
             </div>
 
 
@@ -323,10 +326,11 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
 
             <div class="form-check">
                 <input class="form-check-input" name="agrupar" type="checkbox" id="agrupar" value="1"
-                    <?php if ($agrupar) echo 'checked'; ?>>
+                    <?php echo (isset($_GET['agrupar']) && $_GET['agrupar'] == '1') ? 'checked' : ''; ?>>
                 <label class="form-check-label" for="agrupar">
                     Agrupar Produtos
                 </label>
+                          
             </div>
 
 
@@ -374,9 +378,8 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
                                 <th style="text-align: center; ">Preço UN</th>
                                 <th style="text-align: center;">QNT</th>
                                 <th style="text-align: center; width: 150px;">Preço Total</th>
-
                                 <?php if (!isset($_GET['agrupar'])) { ?>
-                                    <th style="text-align: center; width: 250px;">Setor</th>
+                                    <th style="text-align: center;">Setor</th>
                                     <th style="text-align: center;">Data</th>
                                 <?php } ?>
                             <?php } ?>
@@ -386,7 +389,7 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
                         <?php foreach ($results as $row): ?>
 
                             <tr>
-                                <td><?php echo htmlspecialchars(substr($row['produto'], 0, 35)); ?></td>
+                                <td><?php echo htmlspecialchars(substr($row['produto'], 0, 35) . ' - ' . $row['produto_id']); ?></td>
 
                                 <?php if ($operacao == 0 and !isset($_GET['agrupar'])) { ?>
                                     <td><?php echo htmlspecialchars($row['funcionario_nome']); ?></td>
@@ -428,9 +431,37 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
                     </tbody>
                 </table>
 
-                <?php if ($totalRegistros > $limit) { 
-                    require_once "paginacao.php";
-                } ?>
+                <?php if ($totalRegistros > $limit) { ?>
+                    <div class="paginacao">
+                        <ul class="pagination justify-content-center">
+                            <?php if ($paginaAtual > 1): ?>
+                                <!-- Link para a primeira página -->
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= pegarUri(1) ?>">Primeira</a>
+                                </li>
+                            <?php endif; ?>
+
+                            <?php
+                            // Define o início e o fim da faixa de links a serem exibidos
+                            $inicio = max(1, $paginaAtual - 4); // Mostra até 1 página anterior
+                            $fim = min($totalPaginas, $paginaAtual + 4); // Mostra até 2 páginas posteriores
+
+                            // Exibe os links para as páginas dentro do intervalo
+                            for ($i = $inicio; $i <= $fim; $i++): ?>
+                                <li class="page-item <?= ($i == $paginaAtual) ? 'active' : '' ?>">
+                                    <a class="page-link" href="<?= pegarUri($i) ?>"><?= $i ?></a>
+                                </li>
+                            <?php endfor; ?>
+
+                            <?php if ($paginaAtual < $totalPaginas): ?>
+                                <!-- Link para a última página -->
+                                <li class="page-item">
+                                    <a class="page-link" href="<?= pegarUri($totalPaginas) ?>">Última</a>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </div>
+                <?php } ?>
 
 
 
@@ -458,13 +489,8 @@ $agrupar = isset($_GET['agrupar']) ? 1 : 0;
     ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="text/javascript" src="js/custom.js"></script>
 
-
-
-
-
-
+    <script src="js/custom.js"></script>
 </body>
 
 </html>
