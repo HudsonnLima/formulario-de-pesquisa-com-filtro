@@ -87,6 +87,7 @@ document.getElementById('limparCampos').addEventListener('click', function () {
     window.history.pushState({
         path: newUrl
     }, '', newUrl); // Remove os parâmetros da URL sem recarregar a página
+window.location.href = newUrl;
 });
 
 
