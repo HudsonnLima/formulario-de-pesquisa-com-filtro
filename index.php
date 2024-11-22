@@ -173,7 +173,7 @@ $offset = ($paginaAtual - 1) * $limit;
         //FILTRO FORNECEDOR
         if (isset($dados['fornecedor']) && !empty($dados['fornecedor'])) {
             $fornecedor = "%" . trim($dados['fornecedor']) . "%"; // Busca por similaridade
-            $query .= " AND forn.fornecedor_razao LIKE :fornecedor OR forn.fornecedor_fantasia LIKE :fornecedor";
+            $query .= " AND forn.fornecedor_razao LIKE :fornecedor";
             $params[':fornecedor'] = $fornecedor;
             $countQuery .= " AND forn.fornecedor_razao LIKE :fornecedor";
             $countParams[':fornecedor'] = $fornecedor;
