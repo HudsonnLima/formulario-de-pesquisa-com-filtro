@@ -389,7 +389,7 @@ $offset = ($paginaAtual - 1) * $limit;
                         <?php foreach ($results as $row): ?>
 
                             <tr>
-                                <td><?php echo htmlspecialchars(substr($row['produto'], 0, 35) . ' - ' . $row['produto_id']); ?></td>
+                                <td><?php echo htmlspecialchars(substr($row['produto'], 0, 35)); ?></td>
 
                                 <?php if ($operacao == 0 and !isset($_GET['agrupar'])) { ?>
                                     <td><?php echo htmlspecialchars($row['funcionario_nome']); ?></td>
